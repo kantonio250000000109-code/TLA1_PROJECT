@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
+import './App.css';
 import SummaryCards from './components/SummaryCards';
 import IncomeForm from './components/IncomeForm';
 import CategoryFilter from './components/CategoryFilter';
 import LedgerTable from './components/LedgerTable';
 import CategoryBreakdown from './components/CategoryBreakdown';
-import './App.css';
 
-const DEFAULT_INCOMES = [
-  { id: '1', title: 'Freelance Web Design', amount: 1500, category: 'Freelance', date: '2026-09-01' },
-  { id: '2', title: 'Monthly Salary', amount: 3500, category: 'Salary', date: '2026-09-15' },
-  { id: '3', title: 'Dividend Payout', amount: 250, category: 'Investments', date: '2026-09-20' },
+const INITIAL_DATA = [
+  { id: '1', title: 'Monthly Corporate Salary', amount: 3500.00, category: 'Salary', date: '2026-09-15' },
+  { id: '2', title: 'Freelance Web System Refactor', amount: 1500.00, category: 'Freelance', date: '2026-09-01' },
+  { id: '3', title: 'Dividend Payout', amount: 250.00, category: 'Investments', date: '2026-09-20' }
 ];
 
 export default function App() {
   const [incomes, setIncomes] = useState(() => {
-    const saved = localStorage.getItem('income_ledger_data');
-    return saved ? JSON.parse(saved) : DEFAULT_INCOMES;
+    const saved = localStorage.getItem('enterprise_incomes');
+    return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -23,84 +23,65 @@ export default function App() {
   const [editingIncome, setEditingIncome] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('income_ledger_data', JSON.stringify(incomes));
+    localStorage.setItem('enterprise_incomes', JSON.stringify(incomes));
   }, [incomes]);
 
-  const handleAddOrUpdate = (incomeData) => {
+  const handleSaveIncome = (incomeData) => {
     if (editingIncome) {
-      setIncomes(prev =>
-        prev.map(item => item.id === editingIncome.id ? { ...incomeData, id: item.id } : item)
-      );
+      setIncomes(prev => prev.map(item => item.id === editingIncome.id ? { ...incomeData, id: item.id } : item));
       setEditingIncome(null);
     } else {
-      const newEntry = { ...incomeData, id: Date.now().toString() };
-      setIncomes(prev => [newEntry, ...prev]);
+      setIncomes(prev => [{ ...incomeData, id: Date.now().toString() }, ...prev]);
     }
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      setIncomes(prev => prev.filter(item => item.id !== id));
-      if (editingIncome?.id === id) setEditingIncome(null);
-    }
+    setIncomes(prev => prev.filter(item => item.id !== id));
   };
 
   const handleEdit = (income) => {
     setEditingIncome(income);
   };
 
-  const cancelEdit = () => {
-    setEditingIncome(null);
-  };
-
-  const filteredIncomes = useMemo(() => {
-    return incomes.filter(item => {
-      const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [incomes, selectedCategory, searchQuery]);
-
-  const categories = useMemo(() => {
-    const set = new Set(incomes.map(i => i.category));
-    return ['All', ...Array.from(set)];
-  }, [incomes]);
+  const filteredIncomes = incomes.filter(item => {
+    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <h1>💵 Income Category Ledger</h1>
-        <p>Finals TLA 1: React JS Declarative Refactor</p>
+    <div className="enterprise-container">
+      <header className="enterprise-header">
+        <h1 className="enterprise-title">💎 Enterprise Revenue Ledger</h1>
+        <p className="enterprise-subtitle">Finals TLA 1: React JS Declarative Architecture Refactor</p>
       </header>
 
-      <main className="app-grid">
-        <section className="left-panel">
-          <IncomeForm 
-            onSave={handleAddOrUpdate} 
-            editingIncome={editingIncome} 
-            onCancelEdit={cancelEdit} 
+      <SummaryCards incomes={incomes} />
+
+      <div className="dashboard-grid">
+        <div>
+          <IncomeForm
+            onSave={handleSaveIncome}
+            editingIncome={editingIncome}
+            onCancelEdit={() => setEditingIncome(null)}
           />
           <CategoryBreakdown incomes={incomes} />
-        </section>
+        </div>
 
-        <section className="right-panel">
-          <SummaryCards incomes={incomes} />
-          
-          <CategoryFilter 
-            categories={categories}
+        <div>
+          <CategoryFilter
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
-
-          <LedgerTable 
-            incomes={filteredIncomes} 
-            onEdit={handleEdit} 
-            onDelete={handleDelete} 
+          <LedgerTable
+            incomes={filteredIncomes}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
           />
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
